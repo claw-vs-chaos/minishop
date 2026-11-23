@@ -98,7 +98,7 @@ jobs:
 
       - name: Wait for rollout
         run: |
-          kubectl -n minishop rollout status deployment/catalog --timeout=180s
-          kubectl -n minishop rollout status deployment/order --timeout=180s
-          kubectl -n minishop rollout status deployment/notification --timeout=180s
-          kubectl -n minishop rollout status deployment/web-bff --timeout=180s
+          kubectl -n minishop rollout status deployment/catalog --timeout=600s
+          kubectl -n minishop rollout status deployment/order --timeout=600s
+          kubectl -n minishop rollout status deployment/notification --timeout=600s
+          kubectl -n minishop rollout status deployment/web-bff --timeout=600s
