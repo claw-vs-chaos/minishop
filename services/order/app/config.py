@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     db_max_overflow: int = 5
 
     experiment_flag: str = ""
+    tier_rules: str = ""
 
 
 settings = Settings()

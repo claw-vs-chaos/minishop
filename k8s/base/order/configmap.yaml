@@ -9,3 +9,4 @@ data:
   DB_POOL_SIZE: "5"
   DB_MAX_OVERFLOW: "5"
   EXPERIMENT_FLAG: ""
+  TIER_RULES: '[{"from_order": 3, "pct": 5}, {"from_order": 10, "pct": 10}]'

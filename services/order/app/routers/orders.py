@@ -2,7 +2,7 @@ import logging
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import catalog_client
@@ -46,6 +46,12 @@ async def create_order(payload: OrderCreate, session: AsyncSession = Depends(get
         session.add(user)
         await session.flush()
 
+    prior_orders = await session.scalar(
+        select(func.count())
+        .select_from(Order)
+        .where(Order.user_id == user.id, Order.status == OrderStatus.confirmed)
+    )
+
     async with httpx.AsyncClient() as client:
         products_by_id = {}
         try:
@@ -87,7 +93,7 @@ async def create_order(payload: OrderCreate, session: AsyncSession = Depends(get
                 )
                 items_with_price.append((price, item.quantity))
 
-            order.total_amount = calculate_total(items_with_price)
+            order.total_amount = calculate_total(items_with_price, prior_orders or 0)
             order.status = OrderStatus.confirmed
             await session.commit()
         except Exception as exc:
