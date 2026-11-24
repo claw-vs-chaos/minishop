@@ -66,7 +66,7 @@ Registry (`ghcr.io/<owner>/<repo>`) и SHA коммита, и применяет
   base64 от kubeconfig кластера (`base64 -w0 kubeconfig.yaml`, на Windows
   `[Convert]::ToBase64String([IO.File]::ReadAllBytes("kubeconfig.yaml"))`)
 - Первый деплой создаст 4 приватных пакета в GHCR
-  (`github.com/<owner>/demo-app-aiops/pkgs/container/...`) — сделайте их
+  (`github.com/<owner>/<repo>/pkgs/container/...`) — сделайте их
   публичными (Package settings → Change visibility → Public) или настройте
   `imagePullSecrets` в кластере, иначе `kubectl` не сможет их скачать
 - `ingress-nginx` установлен в кластере (`kubectl apply -f
