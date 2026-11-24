@@ -1,3 +1,5 @@
+import datetime
+
 from pydantic import BaseModel, ConfigDict
 
 from app.models import OrderStatus
@@ -28,4 +30,6 @@ class OrderOut(BaseModel):
     id: int
     status: OrderStatus
     total_amount: float
+    created_at: datetime.datetime | None = None
+    user_email: str | None = None
     items: list[OrderItemOut]

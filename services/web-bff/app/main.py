@@ -1,3 +1,4 @@
+import datetime
 import logging
 
 import httpx
@@ -101,6 +102,28 @@ async def cart_checkout(request: Request, user_email: str = Form(...), user_name
     response = RedirectResponse(url=f"/orders/{order['id']}", status_code=303)
     response.delete_cookie(COOKIE_NAME)
     return response
+
+
+MSK = datetime.timezone(datetime.timedelta(hours=3))
+
+
+def _local_time(value: str | None) -> str:
+    if not value:
+        return ""
+    return datetime.datetime.fromisoformat(value).astimezone(MSK).strftime("%d.%m.%Y %H:%M")
+
+
+templates.env.filters["local_time"] = _local_time
+
+
+@app.get("/orders")
+async def customer_orders(request: Request, email: str = ""):
+    email = email.strip()
+    if not email:
+        return templates.TemplateResponse(request, "orders.html", {"email": "", "orders": [], "error": None})
+    resp = await clients.list_customer_orders(email)
+    resp.raise_for_status()
+    return templates.TemplateResponse(request, "orders.html", {"email": email, "orders": resp.json(), "error": None})
 
 
 @app.get("/orders/{order_id}")

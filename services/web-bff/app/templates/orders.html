@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Мои заказы</h1>
+{% if email %}
+<p class="customer-email">{{ email }}</p>
+{% if orders %}
+<table>
+  <tr><th>Заказ</th><th>Дата</th><th>Товаров</th><th>Сумма</th><th>Статус</th></tr>
+  {% for o in orders %}
+  <tr>
+    <td><a href="/orders/{{ o.id }}">#{{ o.id }}</a></td>
+    <td>{{ o.created_at|local_time }}</td>
+    <td>{{ o['items']|sum(attribute='quantity') }}</td>
+    <td>{{ "%.2f"|format(o.total_amount) }} ₽</td>
+    <td>
+      {% if o.status == 'confirmed' %}<span class="badge in-stock">Подтверждён</span>
+      {% elif o.status == 'cancelled' %}<span class="badge out-of-stock">Отменён</span>
+      {% else %}<span class="badge low-stock">{{ o.status }}</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>Заказов с этим email нет.</p>
+{% endif %}
+{% else %}
+<form method="get" action="/orders">
+  <input type="email" name="email" placeholder="email" required>
+  <button type="submit">Показать заказы</button>
+</form>
+{% endif %}
+<a href="/" class="plain-link">← К каталогу</a>
+{% endblock %}

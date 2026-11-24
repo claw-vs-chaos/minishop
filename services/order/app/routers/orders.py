@@ -4,6 +4,7 @@ import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app import catalog_client
 from app.database import get_session
@@ -16,22 +17,41 @@ logger = logging.getLogger("order.orders")
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
+CUSTOMER_ORDERS_LIMIT = 100
+
+
+def _out(order: Order, email: str | None) -> OrderOut:
+    return OrderOut.model_validate(order).model_copy(update={"user_email": email})
+
+
 @router.get("/{order_id}", response_model=OrderOut)
 async def get_order(order_id: int, session: AsyncSession = Depends(get_session)):
     order = await session.get(Order, order_id)
     if order is None:
         raise HTTPException(status_code=404, detail="order not found")
     await session.refresh(order, attribute_names=["items"])
-    return order
+    user = await session.get(User, order.user_id)
+    return _out(order, user.email if user else None)
 
 
 @router.get("", response_model=list[OrderOut])
-async def list_orders(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(Order).order_by(Order.id.desc()))
-    orders = result.scalars().all()
-    for order in orders:
-        await session.refresh(order, attribute_names=["items"])
-    return orders
+async def list_orders(email: str | None = None, session: AsyncSession = Depends(get_session)):
+    if email is None:
+        result = await session.execute(select(Order).order_by(Order.id.desc()))
+        orders = result.scalars().all()
+        for order in orders:
+            await session.refresh(order, attribute_names=["items"])
+        return orders
+
+    result = await session.execute(
+        select(Order)
+        .join(User, User.id == Order.user_id)
+        .where(User.email == email)
+        .options(selectinload(Order.items))
+        .order_by(Order.id.desc())
+        .limit(CUSTOMER_ORDERS_LIMIT)
+    )
+    return [_out(order, email) for order in result.scalars().all()]
 
 
 @router.post("", response_model=OrderOut, status_code=201)
@@ -104,7 +124,7 @@ async def create_order(payload: OrderCreate, session: AsyncSession = Depends(get
                 raise HTTPException(status_code=503, detail="catalog service unavailable") from exc
             raise
 
-        await session.refresh(order, attribute_names=["items"])
+        await session.refresh(order, attribute_names=["items", "created_at"])
 
     logger.info("order created", extra={"order_id": order.id, "total_amount": float(order.total_amount)})
     await publish_order_event(
@@ -112,4 +132,4 @@ async def create_order(payload: OrderCreate, session: AsyncSession = Depends(get
         order.id,
         {"user_email": payload.user_email, "total_amount": float(order.total_amount)},
     )
-    return order
+    return _out(order, payload.user_email)

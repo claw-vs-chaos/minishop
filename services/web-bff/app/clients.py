@@ -29,3 +29,8 @@ async def create_order(user_email: str, user_name: str, items: list[dict]) -> ht
 async def get_order(order_id: int) -> httpx.Response:
     async with httpx.AsyncClient() as client:
         return await client.get(f"{settings.order_url}/orders/{order_id}", timeout=5)
+
+
+async def list_customer_orders(email: str) -> httpx.Response:
+    async with httpx.AsyncClient() as client:
+        return await client.get(f"{settings.order_url}/orders", params={"email": email}, timeout=5)

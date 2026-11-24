@@ -10,7 +10,7 @@
     <span class="badge low-stock">{{ order.status }}</span>
   {% endif %}
 </p>
-<p>Сумма: {{ "%.2f"|format(order.total_amount) }} ₽</p>
+<p>Сумма: {{ "%.2f"|format(order.total_amount) }} ₽{% if order.created_at %} · {{ order.created_at|local_time }}{% endif %}</p>
 <table>
   <tr><th>product_id</th><th>Кол-во</th><th>Цена</th></tr>
   {% for item in order['items'] %}
@@ -21,5 +21,6 @@
   </tr>
   {% endfor %}
 </table>
+{% if order.user_email %}<p><a href="/orders?email={{ order.user_email|urlencode }}" class="btn">Все мои заказы</a></p>{% endif %}
 <a href="/" class="plain-link">← К каталогу</a>
 {% endblock %}
