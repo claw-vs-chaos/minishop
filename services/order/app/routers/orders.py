@@ -10,7 +10,7 @@ from app import catalog_client
 from app.database import get_session
 from app.events import publish_order_event
 from app.models import Order, OrderItem, OrderStatus, User
-from app.pricing import calculate_total
+from app.pricing import calculate_item_totals, calculate_total
 from app.schemas import OrderCreate, OrderOut
 
 logger = logging.getLogger("order.orders")
@@ -104,16 +104,25 @@ async def create_order(payload: OrderCreate, session: AsyncSession = Depends(get
                 reserved.append((item.product_id, item.quantity))
 
             items_with_price = []
+            order_items = []
             for item in payload.items:
                 price = float(products_by_id[item.product_id]["price"])
-                session.add(
-                    OrderItem(
-                        order_id=order.id, product_id=item.product_id, quantity=item.quantity, price_at_order=price
-                    )
+                order_item = OrderItem(
+                    order_id=order.id, product_id=item.product_id, quantity=item.quantity, price_at_order=price
                 )
+                session.add(order_item)
+                order_items.append(order_item)
                 items_with_price.append((price, item.quantity))
 
             order.total_amount = calculate_total(items_with_price, prior_orders or 0)
+            item_totals = calculate_item_totals(items_with_price, prior_orders or 0)
+            if abs(sum(item_totals) - order.total_amount) > 0.001:
+                raise ValueError(
+                    f"order total does not match sum of item totals: "
+                    f"{order.total_amount:.2f} != {sum(item_totals):.2f}"
+                )
+            for order_item, item_total in zip(order_items, item_totals):
+                order_item.total = item_total
             order.status = OrderStatus.confirmed
             await session.commit()
         except Exception as exc:

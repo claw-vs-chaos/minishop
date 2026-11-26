@@ -22,6 +22,7 @@ class OrderItemOut(BaseModel):
     product_id: int
     quantity: int
     price_at_order: float
+    total: float
 
 
 class OrderOut(BaseModel):

@@ -48,5 +48,6 @@ class OrderItem(Base):
     product_id: Mapped[int]
     quantity: Mapped[int]
     price_at_order: Mapped[float] = mapped_column(Numeric(10, 2))
+    total: Mapped[float] = mapped_column(Numeric(10, 2))
 
     order: Mapped["Order"] = relationship(back_populates="items")
